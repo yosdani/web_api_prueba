@@ -11,8 +11,8 @@ using System.Text;
 using api_prueba.Auth;
 using api_prueba.Support;
 
-var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddTransient<IJwtAuthenticationService, JwtAuthenticationService>();
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+//builder.Services.AddTransient<IJwtAuthenticationService, JwtAuthenticationService>();
 
 // Add services to the container.
 #region AppSettings
@@ -25,10 +25,11 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownNetworks.Clear();
     options.KnownProxies.Clear();
 });
-builder.Services.AddControllers();
+
 #endregion
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
+
 #region APISettings
 IConfigurationSection appSettingsConfig = builder.Configuration.GetSection(nameof(AppSettings));
 builder.Services.Configure<AppSettings>(appSettingsConfig);
@@ -37,12 +38,12 @@ IConfigurationSection dbKeysConfig = builder.Configuration.GetSection(nameof(DBK
 builder.Services.Configure<DBKeysSettings>(dbKeysConfig);
 builder.Services.AddSingleton(resolver => resolver.GetRequiredService<IOptionsMonitor<DBKeysSettings>>().CurrentValue);
 #endregion
-
 #region Log4Net
 builder.Logging.ClearProviders();
-//builder.Logging.AddLog4Net(appSettingsConfig.GetSection(nameof(Log4Net)).GetSection(nameof(Log4Net.Log4NetConfigFile)).Value);
+builder.Logging.AddLog4Net(appSettingsConfig.GetSection(nameof(Log4Net)).GetSection(nameof(Log4Net.Log4NetConfigFile)).Value);
 builder.Services.AddSingleton(new LogWriter());
 #endregion
+
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
@@ -70,6 +71,33 @@ builder.Services.AddSwaggerGen(c =>
 });
 builder.Services.AddCors();
 builder.Services.AddControllers();
+#region Security
+string key = builder.Configuration.GetSection("APIKey").Value;
+builder.Services.AddAuthentication(x =>
+{
+    x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(x =>
+{
+    x.RequireHttpsMetadata = false;
+    x.SaveToken = true;
+    x.TokenValidationParameters = new TokenValidationParameters
+    {
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(key)),
+        ValidateAudience = false,
+        ValidateIssuerSigningKey = false,
+        ValidateIssuer = false
+    };
+});
+#endregion
+builder.Services.AddAuthorization();
+#region JwtAuthenticationService
+builder.Services.AddSingleton<IJwtAuthenticationService>(new JwtAuthenticationService(key));
+builder.Services.AddSingleton(new JwtAuthenticationService(key));
+#endregion
+
+
+builder.Services.AddDirectoryBrowser();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -78,23 +106,13 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-#region Security
-string key = builder.Configuration.GetSection("APIKey").Value;
-
-#endregion
 
 
-builder.Services.AddAuthorization();
 
-#region JwtAuthenticationService
 
-builder.Services.AddSingleton<IJwtAuthenticationService>(new JwtAuthenticationService(key));
-builder.Services.AddSingleton(new JwtAuthenticationService(key));
-#endregion
-builder.Services.AddDirectoryBrowser();
 
 #region EnvironmentData
-Tools.ContentRootPath = builder.Environment.ContentRootPath;
+//Tools.ContentRootPath = builder.Environment.ContentRootPath;
 Tools.CurrentEnvironment = builder.Environment.EnvironmentName;
 #endregion
 
@@ -104,7 +122,7 @@ app.UseAuthorization();
 
 #region Config
 Tools.Services = app.Services;
-LogWriter.Configure(Tools.Settings.Log4Net.Log4NetConfigFile, null);
+//LogWriter.Configure(Tools.Settings.Log4Net.Log4NetConfigFile, null);
 #endregion
 
 #region DBSettings

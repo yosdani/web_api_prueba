@@ -10,9 +10,7 @@ using Datamodels;
 using Datamodels.Logic;
 using Datamodels.Models;
 using Datamodels.Utils;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using System.IdentityModel.Tokens.Jwt;
 using static CommonTypes.Language.LanguageSupport;
 using static CommonTypes.Request.Models.UserRequests;
@@ -87,7 +85,7 @@ namespace api_prueba.Controllers
                 logger.LogInfo($"Register.{TextSupport.customSeparator}Data: {request}", settings.Log4Net.DetailedLog);
                 if (!IsValidLang(request.Lang, out bool isEn))
                     return InvalidOperation(message_invalidLanguage);
-                if (GeneralSupport.IsValidToken(await GetToken(), out Tuple<string, JwtSecurityToken> tk, out bool expired, out bool relog, out SecTokenType type) && type == SecTokenType.Public)
+                if (!GeneralSupport.IsValidToken(await GetToken(), out Tuple<string, JwtSecurityToken> tk, out bool expired, out bool relog, out SecTokenType type) )
                     using (Context context = new Context(await Tools.ConnectionString(), false))
                     {
                         User user = new UserLogic(context).Register(request, dbKeys.MasterUser, dbKeys.GeneralStatus.Inactive, dbKeys.UserRoles, out LanguageObject message);
@@ -105,7 +103,7 @@ namespace api_prueba.Controllers
 
         private ActionResult SendActivationEmail(User user, bool isEn)
         {
-            EmailHandler.Send(settings.EMails.Sender, new Dictionary<string, bool>() { { user.Email, true } }, isEn ? message_userActivation.En : message_userActivation.Pt, (isEn ? Tools.Resource_Registration_En : Tools.Resource_Registration_Pt).Replace("%name%", $"{user.Name} {user.Surname}").Replace("http://link.link/", $"{settings.DataAccess.FrontURL.TrimEnd(TextSupport.simpleUriSeparator)}/register/{Encryption.ToURLFix(Encryption.Encrypt_DoubleBound_1(user.Email))}"), MailService.MessageType.html, registrationFooter);
+            EmailHandler.Send(settings.EMails.Sender, new Dictionary<string, bool>() { { user.Email, true } }, isEn ? message_userActivation.En : message_userActivation.Es, (isEn ? Tools.Resource_Registration_En : Tools.Resource_Registration_Pt).Replace("%name%", $"{user.Name} {user.Surname}").Replace("http://link.link/", $"{settings.DataAccess.FrontURL.TrimEnd(TextSupport.simpleUriSeparator)}/register/{Encryption.ToURLFix(Encryption.Encrypt_DoubleBound_1(user.Email))}"), MailService.MessageType.html, registrationFooter);
             return Success();
         }
 
@@ -299,7 +297,7 @@ namespace api_prueba.Controllers
                     string token = _authService.GetToken_Email(email, pin, out _, user.RoleId);
                     if (!string.IsNullOrWhiteSpace(token))
                     {
-                        EmailHandler.Send(settings.EMails.Sender, new Dictionary<string, bool>() { { user.Email, true } }, isEn ? message_passRecovery.En : message_passRecovery.Pt, (isEn ? Tools.Resource_Recovery_En : Tools.Resource_Recovery_Pt).Replace("%name%", $"{user.Name} {user.Surname}").Replace("%pin%", pin).Replace("http://link.link/", $"{settings.DataAccess.FrontURL.TrimEnd(TextSupport.simpleUriSeparator)}/recover/{JwtAuthenticationService.ToURLFix(token)}"), MailService.MessageType.html, registrationFooter);
+                        EmailHandler.Send(settings.EMails.Sender, new Dictionary<string, bool>() { { user.Email, true } }, isEn ? message_passRecovery.En : message_passRecovery.Es, (isEn ? Tools.Resource_Recovery_En : Tools.Resource_Recovery_Pt).Replace("%name%", $"{user.Name} {user.Surname}").Replace("%pin%", pin).Replace("http://link.link/", $"{settings.DataAccess.FrontURL.TrimEnd(TextSupport.simpleUriSeparator)}/recover/{JwtAuthenticationService.ToURLFix(token)}"), MailService.MessageType.html, registrationFooter);
                         return Success();
                     }
                 }

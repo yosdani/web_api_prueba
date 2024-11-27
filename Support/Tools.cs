@@ -20,30 +20,13 @@ namespace api_prueba.Support
         private static string contentRootPath, currentEnvironment;
         internal const string dataPath = "Backstage";
         internal const string dataPathReplacement = "Storage";
-        private static readonly MultilingualException exception_singletonError = new MultilingualException(new LanguageObject("Can't set once a value has already been set", "Não é possível definir uma vez que um valor já foi definido"));
+        private static readonly MultilingualException exception_singletonError = new MultilingualException(new LanguageObject("Can't set once a value has already been set", "No se puede establecer una vez que ya se ha establecido un valor"));
         private static readonly MultilingualException exception_dbConError = new MultilingualException(new LanguageObject("Cannot connect to the database", "No es posibe conectar a a base de datos"));
         private static Context[] contexts;
         private static int currentDBConIndex = -1;
         private static HashSet<int> usedIndicator = new HashSet<int>();
 
-        internal static string ContentRootPath
-        {
-            get => contentRootPath;
-            set
-            {
-                if (contentRootPath != null)
-                    throw exception_singletonError;
-                contentRootPath = value;
-                DataPath = Path.Combine(contentRootPath, dataPath);
-                ResourcesPath = Path.Combine(contentRootPath, "Res");
-                TemplatesPath = Path.Combine(ResourcesPath, "Templates");
-                TempPath = Path.Combine(DataPath, "_Temp_");
-                DatasourcePath = Path.Combine(TempPath, "_Datasources_");
-                ImportPath = Path.Combine(TempPath, "_Import_");
-                Task.WaitAll(Task.Run(() => Resource_RegistrationFooter = File.ReadAllBytes(Path.Combine(TemplatesPath, "registration_footer.png"))), Task.Run(() => Resource_Registration_En = File.ReadAllText(Path.Combine(TemplatesPath, "registration_en.htm"))), Task.Run(() => Resource_Registration_Pt = File.ReadAllText(Path.Combine(TemplatesPath, "registration_pt.htm"))), Task.Run(() => Resource_Recovery_En = File.ReadAllText(Path.Combine(TemplatesPath, "recovery_en.htm"))), Task.Run(() => Resource_Recovery_Pt = File.ReadAllText(Path.Combine(TemplatesPath, "recovery_pt.htm"))), Task.Run(() => Resource_Contact = File.ReadAllText(Path.Combine(TemplatesPath, "contact_neutral.htm"))));
-            }
-        }
-
+       
         internal static string CurrentEnvironment
         {
             get => currentEnvironment;
@@ -163,17 +146,13 @@ namespace api_prueba.Support
             {
                 i = currentDBConIndex < 0 ? 0 : currentDBConIndex;
                 count = 0;
-                while (count++ < contexts.Length)
-                    try
-                    {
-                        i %= contexts.Length;
-                        if (await (c = contexts[i]).Database.CanConnectAsync())
-                        {
-                            if (currentDBConIndex != i)
-                                currentDBConIndex = i;
-                            return c.Database.GetConnectionString();
-                        }
-                        i++;
+
+                try
+                {
+
+                    return Tools.Settings.DataAccess.DBConnections[0].ToString();
+                        
+                        
                     }
                     catch { }
                 if (currentDBConIndex > -1)
