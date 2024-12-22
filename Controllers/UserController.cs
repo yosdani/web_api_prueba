@@ -40,8 +40,8 @@ namespace api_prueba.Controllers
                 {
                     logger.LogInfo($"{TextSupport.customSeparator}Owner: {owner.Email}.", settings.Log4Net.DetailedLog);
                     using (Context context = new Context(await Tools.ConnectionString()))
-                        return Success(new UserLogic(context).GetUsers(request, dbKeys.MasterUser));
-                }
+                            return Success(new UserLogic(context).GetUsers(request));
+                    }
                 return Default(expired, relog);
             }
             catch (Exception exc)
@@ -113,9 +113,8 @@ namespace api_prueba.Controllers
             try
             {
                 logger.LogInfo($"Authenticate.{TextSupport.customSeparator}For: {request}.", settings.Log4Net.DetailedLog);
-                if (GeneralSupport.IsValidToken(await GetToken(), out Tuple<string, JwtSecurityToken> tk, out bool expired, out bool relog, out SecTokenType type) && type == SecTokenType.Public)
-                {
-                    Tuple<string, User> result = _authService.Authenticate(request, dbKeys.MasterUser, out DateTime? expires, new int[] { dbKeys.GeneralStatus.Active }, out LanguageObject message);
+               
+                    Tuple<string, User> result = _authService.Authenticate(request,  out DateTime? expires, new int[] { dbKeys.GeneralStatus.Active }, out LanguageObject message);
                     if (result != null)
                         return Success(new
                         {
@@ -124,8 +123,7 @@ namespace api_prueba.Controllers
                             ExpiresUtc = expires
                         });
                     return InvalidOperation(message ?? message_wrongCredentials);
-                }
-                return Default(expired, relog);
+               
             }
             catch (Exception exc)
             {
@@ -147,7 +145,7 @@ namespace api_prueba.Controllers
                     if ( owner.Email.ToLower().Trim() == request.Email.ToLower().Trim())
                         using (Context context = new Context(await Tools.ConnectionString()))
                         {
-                            User user = new UserLogic(context).GetUser(request.Email, dbKeys.MasterUser, isAdmin ? null : new int[] { dbKeys.GeneralStatus.Active });
+                            User user = new UserLogic(context).GetUser(request.Email, isAdmin ? null : new int[] { dbKeys.GeneralStatus.Active });
                             if (user != null)
                                 return Success(GeneralSupport.Convert(user));
                         }
@@ -172,7 +170,7 @@ namespace api_prueba.Controllers
                 if (GeneralSupport.IsValidToken(await GetToken(), out Tuple<string, JwtSecurityToken> tk, out bool expired, out bool relog, out SecTokenType type) && type == SecTokenType.Public)
                     using (Context context = new Context(await Tools.ConnectionString()))
                     {
-                        User user = new UserLogic(context).GetUser(request.Email, dbKeys.MasterUser, new int[] { dbKeys.GeneralStatus.Inactive });
+                        User user = new UserLogic(context).GetUser(request.Email, new int[] { dbKeys.GeneralStatus.Inactive });
                         if (user != null)
                             return SendActivationEmail(user, isEn);
                         return InvalidOperation();
@@ -197,7 +195,7 @@ namespace api_prueba.Controllers
                     logger.LogInfo($"{TextSupport.levelSeparator}For: {email}.", settings.Log4Net.DetailedLog);
                     using (Context context = new Context(await Tools.ConnectionString(), false))
                     {
-                        User user = new UserLogic(context).ChangeStatus(email, dbKeys.MasterUser, dbKeys.GeneralStatus.Active, out LanguageObject message, new int[] { dbKeys.GeneralStatus.Inactive });
+                        User user = new UserLogic(context).ChangeStatus(email, dbKeys.GeneralStatus.Active, out LanguageObject message, new int[] { dbKeys.GeneralStatus.Inactive });
                         if (user != null)
                         {
                             string utoken = _authService.GetToken_Email(user.Email, out DateTime? expires, user.RoleId);
@@ -480,7 +478,7 @@ namespace api_prueba.Controllers
                     if (owner.Email.ToLower().Trim() == request.Email.ToLower().Trim() && owner.Password == Encryption.Encrypt_1(request.Password))
                         using (Context context = new Context(await Tools.ConnectionString(), false))
                         {
-                            if (new UserLogic(context).ChangeStatus(request.Email, dbKeys.MasterUser, dbKeys.GeneralStatus.Deleted, out message) != null)
+                            if (new UserLogic(context).ChangeStatus(request.Email, dbKeys.GeneralStatus.Deleted, out message) != null)
                                 return Success();
                             return InvalidOperation(message);
                         }
@@ -514,7 +512,7 @@ namespace api_prueba.Controllers
                     if (owner.Password == Encryption.Encrypt_1(request.Password))
                         using (Context context = new Context(await Tools.ConnectionString(), false))
                         {
-                            if (new UserLogic(context).ChangeStatus(request.Emails, dbKeys.MasterUser, newStatus, out LanguageObject message))
+                            if (new UserLogic(context).ChangeStatus(request.Emails, newStatus, out LanguageObject message))
                                 return Success();
                             return InvalidOperation(message);
                         }

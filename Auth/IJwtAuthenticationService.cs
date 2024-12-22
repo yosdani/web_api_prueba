@@ -8,7 +8,7 @@ namespace api_prueba.Auth
     public interface IJwtAuthenticationService
     {
        
-            Tuple<string, User> Authenticate(User_Authenticate aur, MasterUser masterUser, out DateTime? expires, IEnumerable<int> generalStatus, out LanguageObject message);
+            Tuple<string, User> Authenticate(User_Authenticate aur, out DateTime? expires, IEnumerable<int> generalStatus, out LanguageObject message);
 
             string GetToken_Email(string email, out DateTime? expires, int roleId);
 

@@ -9,6 +9,7 @@ using Datamodels;
 using Datamodels.Logic;
 using CommonTypes.Util.RegExp;
 using Datamodels.Extentions;
+using CommonTypes.Settings.Keys;
 
 namespace api_prueba.Support
 {
@@ -51,7 +52,7 @@ namespace api_prueba.Support
         {
             if (_IsValidToken(token, out Tuple<string, JwtSecurityToken> tk, out expired, out SecTokenType type) && type == SecTokenType.Email)
             {
-                User user = _GetUser(SplitTokenData(tk.Item1).Item1, withRoles, userStatus, userRoles);
+                User user = _GetUser(SplitTokenData(tk.Item1).Item1, Tools.DBKeys.MasterUser, withRoles, userStatus, userRoles);
                 if (user != null)
                 {
                     if (!(relog = user.RoleId != GetUserRoleId(tk.Item2)))
@@ -63,11 +64,11 @@ namespace api_prueba.Support
             return null;
         }
 
-        private static User _GetUser(string email, bool withRoles, IEnumerable<int> userStatus = null, IEnumerable<int> userRoles = null)
+        private static User _GetUser(string email,MasterUser masterUser ,bool withRoles, IEnumerable<int> userStatus = null, IEnumerable<int> userRoles = null)
         {
             using (Context context = new Context(Tools.ConnectionString().Result))
             {
-                User user = withRoles ? new UserLogic(context).GetUser(email, Tools.DBKeys.MasterUser, userStatus, userRoles) : new UserLogic(context).GetUser(email, Tools.DBKeys.MasterUser, userStatus);
+                User user = withRoles ? new UserLogic(context).GetUser(email, userStatus, userRoles) : new UserLogic(context).GetUser(email, userStatus);
                 if (user?.Id != Tools.DBKeys.MasterUser.Id)
                     return user;
                 return null;
@@ -118,7 +119,7 @@ namespace api_prueba.Support
         {
             using (Context context = new Context(Tools.ConnectionString().Result))
             {
-                Tuple<int, int> user = new UserLogic(context).GetUserIdRoleId(SplitTokenData(tk.Item1).Item1, Tools.DBKeys.MasterUser);
+                Tuple<int, int> user = new UserLogic(context).GetUserIdRoleId(SplitTokenData(tk.Item1).Item1);
                 if (user != null && user.Item1 != Tools.DBKeys.MasterUser.Id)
                     return !(relog = user.Item2 != GetUserRoleId(tk.Item2));
                 return relog = false;

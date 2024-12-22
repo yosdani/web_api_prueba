@@ -26,14 +26,15 @@ namespace api_prueba.Auth
             _random = new Random();
         }
 
-        public Tuple<string, User> Authenticate(User_Authenticate aur, MasterUser masterUser, out DateTime? expires, IEnumerable<int> generalStatus, out LanguageObject message)
+        public Tuple<string, User> Authenticate(User_Authenticate aur, out DateTime? expires, IEnumerable<int> generalStatus, out LanguageObject message)
         {
             using (Context context = new Context(Tools.ConnectionString().Result))
             {
                 expires = null;
-                User user = new UserLogic(context).Authenticate(aur, masterUser, out message, generalStatus);
+                User user = new UserLogic(context).Authenticate(aur, out message, generalStatus);
+               
                 if (user == null)
-                    return null;
+                  return null;
                 return new Tuple<string, User>(GetToken_Email(aur.Email, out expires, user.RoleId), user);
             }
         }
