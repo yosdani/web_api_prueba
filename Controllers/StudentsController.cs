@@ -29,7 +29,7 @@ namespace api_prueba.Controllers
             try
             {
                 logger.LogInfo($"Upload txt.{TextSupport.customSeparator}From: {request}.", settings.Log4Net.DetailedLog);
-                User owner = null;// GeneralSupport.GetUser(await GetToken(), true, out bool expired, out bool relog, new int[] { dbKeys.GeneralStatus.Active }, new int[] { dbKeys.UserRoles.Admin });
+                User owner = null;
                 if (owner == null)
                 {
                     logger.LogInfo($"{TextSupport.customSeparator}Read: {request} file", settings.Log4Net.DetailedLog);
