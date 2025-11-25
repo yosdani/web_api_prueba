@@ -9,26 +9,25 @@ using System.Diagnostics;
 using CommonTypes.Util.Text;
 using CommonTypes.Responses;
 using CommonTypes.Settings;
+using CommonTypes.Settings.Keys.Items;
 
 namespace api_prueba.Controllers
 {
-    public abstract class PruebaController : ControllerBase
+    
+    public class PruebaController : ControllerBase
     {
-        private static readonly LanguageObject message_invalidToken = new LanguageObject("Invalid token", "Token inválido");
-        private static readonly LanguageObject message_relogToken = new LanguageObject("Login required", "Login necessário");
-        private static readonly LanguageObject message_expiredToken = new LanguageObject("Expired token", "O token expirou");
-        private static readonly LanguageObject message_invalidOperation = new LanguageObject("Invalid operation", "Operação inválida");
+
+
         protected internal readonly AppSettings settings = Tools.Settings;
         protected internal readonly DBKeysSettings dbKeys = Tools.DBKeys;
-        protected internal static readonly int[] adminEditorRoles = new int[] { Tools.DBKeys.UserRoles.Admin, Tools.DBKeys.UserRoles.Invitado }, adminEditorPartnerRoles = new List<int>(adminEditorRoles) { Tools.DBKeys.UserRoles.Public }.ToArray();
         protected internal readonly LogWriter logger;
+        private static readonly LanguageObject message_invalidToken = new LanguageObject("Invalid token", "Token inválido");
+        private static readonly LanguageObject message_invalidOperation = new LanguageObject("Invalid operation", "Operacion inválida");
+        private static readonly LanguageObject message_relogToken = new LanguageObject("Login required", "Login necessário");
+        private static readonly LanguageObject message_expiredToken = new LanguageObject("Expired token", "Token Expirado");
+        private static readonly LanguageObject message_notCompleteOperation = new LanguageObject("Operation not completed", "Operacion no completada");
 
         protected internal PruebaController(LogWriter logger) => this.logger = logger;
-
-        protected internal string WebRootURL => $"{Request.Scheme}://{Request.Host}{Request.PathBase}";
-
-        protected internal string DataURL => $"{WebRootURL}/{Tools.dataPathReplacement}";
-
         protected internal Task<string> GetToken() => HttpContext.GetTokenAsync("access_token");
 
         protected internal ActionResult Default(bool expired, bool relog)
@@ -45,8 +44,8 @@ namespace api_prueba.Controllers
             logger.LogInfo($"{string.Concat(Enumerable.Repeat(TextSupport.levelSeparator, level))}Success.", Tools.Settings.Log4Net.DetailedLog);
             return Ok(new GenericResponse<object>
             {
-                Status = ReturnStatus.Success.ToString(),
-                Result = result
+                Status = ReturnStatus.Success,
+                Result = result,
             });
         }
 
@@ -55,7 +54,7 @@ namespace api_prueba.Controllers
             logger.LogInfo($"{string.Concat(Enumerable.Repeat(TextSupport.levelSeparator, level))}Invalid.", Tools.Settings.Log4Net.DetailedLog);
             return BadRequest(new GenericResponse<object>
             {
-                Status = ReturnStatus.Error.ToString(),
+                Status = ReturnStatus.Error,
                 Message = message ?? message_invalidOperation
             });
         }
@@ -65,7 +64,7 @@ namespace api_prueba.Controllers
             logger.LogInfo($"{string.Concat(Enumerable.Repeat(TextSupport.levelSeparator, level))}Expired.", Tools.Settings.Log4Net.DetailedLog);
             return Unauthorized(new GenericResponse<object>
             {
-                Status = ReturnStatus.Expired.ToString(),
+                Status = ReturnStatus.Expired,
                 Message = message_expiredToken
             });
         }
@@ -75,7 +74,7 @@ namespace api_prueba.Controllers
             logger.LogInfo($"{string.Concat(Enumerable.Repeat(TextSupport.levelSeparator, level))}Invalid.", Tools.Settings.Log4Net.DetailedLog);
             return StatusCode(403, new GenericResponse<object>
             {
-                Status = ReturnStatus.Invalid.ToString(),
+                Status = ReturnStatus.Invalid,
                 Message = message_invalidToken
             });
         }
@@ -85,7 +84,7 @@ namespace api_prueba.Controllers
             logger.LogInfo($"{string.Concat(Enumerable.Repeat(TextSupport.levelSeparator, level))}Relog.", Tools.Settings.Log4Net.DetailedLog);
             return StatusCode(403, new GenericResponse<object>
             {
-                Status = ReturnStatus.Relog.ToString(),
+                Status = ReturnStatus.Relog,
                 Message = message_relogToken
             });
         }
@@ -102,22 +101,12 @@ namespace api_prueba.Controllers
                 logger.LogError(exc);
                 return StatusCode(500, new GenericResponse<object>
                 {
-                    Status = ReturnStatus.Error.ToString(),
-                    Message = message_systemError.ToString()
+                    Status = ReturnStatus.Error,
+                    Message = message_systemError
                 });
             }
         }
-
-        protected internal bool IsAdminOrEditor(int roleId) => adminEditorRoles.Any(r => r == roleId);
-
-
-        private enum ReturnStatus
-        {
-            Success,
-            Error,
-            Expired,
-            Invalid,
-            Relog
-        }
     }
 }
+
+

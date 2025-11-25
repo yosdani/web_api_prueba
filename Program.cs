@@ -1,19 +1,17 @@
-using CommonTypes.Settings.App;
+using CommonTypes.Log;
+using CommonTypes.Settings.App.AppSettingsItems;
 using CommonTypes.Settings;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Options;
-using CommonTypes.Log;
-using CommonTypes.Settings.App.AppSettingsItems;
-using Microsoft.OpenApi.Models;
+using CommonTypes.Settings.App;
+using api_prueba.Auth;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using api_prueba.Auth;
 using api_prueba.Support;
+using Microsoft.OpenApi.Models;
 
-WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
-//builder.Services.AddTransient<IJwtAuthenticationService, JwtAuthenticationService>();
-
+var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 #region AppSettings
 builder.Configuration.AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json");
@@ -43,12 +41,13 @@ builder.Logging.ClearProviders();
 builder.Logging.AddLog4Net(appSettingsConfig.GetSection(nameof(Log4Net)).GetSection(nameof(Log4Net.Log4NetConfigFile)).Value);
 builder.Services.AddSingleton(new LogWriter());
 #endregion
+// Add services to the container.
 
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "Prueba_Web_API",
+        Title = "api_prueba",
         Version = "v1"
     });
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
@@ -68,9 +67,11 @@ builder.Services.AddSwaggerGen(c =>
                                                                         Id = "Bearer"
                                                                     }
                                                                 }, new string[] { } } });
+
 });
 builder.Services.AddCors();
 builder.Services.AddControllers();
+
 #region Security
 string key = builder.Configuration.GetSection("APIKey").Value;
 builder.Services.AddAuthentication(x =>
@@ -83,7 +84,7 @@ builder.Services.AddAuthentication(x =>
     x.SaveToken = true;
     x.TokenValidationParameters = new TokenValidationParameters
     {
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(key)),
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
         ValidateAudience = false,
         ValidateIssuerSigningKey = false,
         ValidateIssuer = false
@@ -98,18 +99,22 @@ builder.Services.AddSingleton(new JwtAuthenticationService(key));
 
 
 builder.Services.AddDirectoryBrowser();
-var app = builder.Build();
 
+
+var app = builder.Build();
+Tools.App = app;
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+    app.UseDeveloperExceptionPage();
+
+    // Enable middleware to serve generated Swagger as a JSON endpoint.
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "MyAPI V1");
+    });
 }
-
-
-
-
 
 #region EnvironmentData
 //Tools.ContentRootPath = builder.Environment.ContentRootPath;

@@ -16,35 +16,68 @@ namespace api_prueba.Auth
 {
     public class JwtAuthenticationService : IJwtAuthenticationService
     {
+
         private readonly string _key;
         private readonly Random _random;
         private const char a1 = '.', v1 = '$';
-
         public JwtAuthenticationService(string key)
         {
             _key = key;
             _random = new Random();
         }
 
-        public Tuple<string, User> Authenticate(User_Authenticate aur, out DateTime? expires, IEnumerable<int> generalStatus, out LanguageObject message)
+
+
+        public string Authenticate(string username, string password, out DateTime? expires, bool fullAuthentication = true)
         {
+            expires = null;
             using (Context context = new Context(Tools.ConnectionString().Result))
             {
-                expires = null;
-                User user = new UserLogic(context).Authenticate(aur, out message, generalStatus);
-               
-                if (user == null)
-                  return null;
-                return new Tuple<string, User>(GetToken_Email(aur.Email, out expires, user.RoleId), user);
+                var str = Tools.ConnectionString;
+                var _webServiceLogic = new Datamodels.Logic.WebServiceLogic(context);
+
+                //si el servicio no esta disponible no se genera token, para devolver 401 - UnAuthorized
+                var isAvailable = true;
+                if (!isAvailable)
+                    return null;
+
+                var userName = username ?? "";
+                var userPassword = password ?? "";
+
+                //si no se autentica no se genera token, para devolver 401 - UnAuthorized
+                var authenticated = fullAuthentication ? _webServiceLogic.Authenticate(Tools.IdWebServiceFunction, userName, userPassword) : _webServiceLogic.AuthenticateByUserAndPassword(Tools.IdWebServiceFunction, username, password);
+
+                if (!authenticated)
+                    return null;
+
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var tokenKey = Encoding.UTF8.GetBytes(_key);
+
+                expires = DateTime.UtcNow.AddHours(1);
+                var tokenDescriptor = new SecurityTokenDescriptor
+                {
+                    Subject = new ClaimsIdentity(new Claim[]
+                    {
+                    new Claim(ClaimTypes.Email, username)
+                    }),
+                    Expires = expires,
+                    SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(tokenKey), SecurityAlgorithms.HmacSha256Signature)
+                };
+
+                var token = tokenHandler.CreateToken(tokenDescriptor);
+
+                return tokenHandler.WriteToken(token);
             }
         }
+
+
 
         private string GetToken(string data, out DateTime? expires, double extendHours, int? roleId)
         {
             if (!string.IsNullOrEmpty(data))
             {
                 JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
-                byte[] tokenKey = Encoding.ASCII.GetBytes(_key);
+                byte[] tokenKey = Encoding.UTF8.GetBytes(_key);
                 expires = DateTime.UtcNow.AddHours(extendHours);
                 List<Claim> claims = new List<Claim>() { new Claim(ClaimTypes.Email, data) };
                 if (roleId != null)
@@ -100,4 +133,8 @@ namespace api_prueba.Auth
 
         public static string FromURLFix(string text) => text.Replace(v1, a1);
     }
+
 }
+
+
+

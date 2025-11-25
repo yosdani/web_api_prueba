@@ -7,13 +7,15 @@ namespace api_prueba.Auth
 {
     public interface IJwtAuthenticationService
     {
-       
-            Tuple<string, User> Authenticate(User_Authenticate aur, out DateTime? expires, IEnumerable<int> generalStatus, out LanguageObject message);
 
-            string GetToken_Email(string email, out DateTime? expires, int roleId);
 
-            string GetToken_GUID(out DateTime? expires);
+        string Authenticate(string username, string password, out DateTime? expires, bool fullAuthentication = true);
 
-            string RefreshToken(string token, string refreshCode, out DateTime? expires);
-        }
+        string RefreshToken(string token, string refreshCode, out DateTime? expires);
+
+        string GetToken_GUID(out DateTime? expires);
+
+
+
     }
+}
